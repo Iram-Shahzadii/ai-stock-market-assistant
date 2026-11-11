@@ -1,0 +1,13 @@
+flowchart LR
+  A[User clicks<br/>Run in background] --> B[POST /api/jobs]
+  B --> C[(Job record saved<br/>status = queued)]
+  B --> D[[Redis queue]]
+  D --> E[Celery worker]
+  E --> F[Fetch data<br/>progress 10%]
+  F --> G{Provider error?}
+  G -- yes --> H[status = retrying<br/>wait 2s, 4s, 8s<br/>max 3 retries]
+  H --> E
+  G -- no --> I[Run script in sandbox<br/>progress 40%]
+  I --> J[Save result<br/>progress 100%]
+  J --> K[Analyses page polls<br/>and shows result]
+  G -- bad input --> L[status = failed<br/>no retry]

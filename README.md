@@ -103,15 +103,24 @@ GitHub Actions runs backend lint + tests, frontend lint + build, and Docker imag
 
 ## Screenshots
 
-_Add screenshots here after running the app (save them in `docs/screenshots/`)._
+| Assistant (live NVDA answer) | Analyses (Celery + Redis, retry, saved result) |
+|---|---|
+| ![chat](docs/screenshots/chat.png) | ![jobs](docs/screenshots/jobs.png) |
 
-| Assistant | Technicals | Fundamentals |
-|---|---|---|
-| ![chat](docs/screenshots/chat.png) | ![chart](docs/screenshots/chart.png) | ![fundamentals](docs/screenshots/fundamentals.png) |
+_Add more screenshots (Technicals, Fundamentals, Compare, What-if) to `docs/screenshots/`._
 
-| Compare | What-if | Analyses |
-|---|---|---|
-| ![compare](docs/screenshots/compare.png) | ![whatif](docs/screenshots/whatif.png) | ![jobs](docs/screenshots/jobs.png) |
+## Deliverables
+
+| Deliverable | File |
+|---|---|
+| Miro board content (research, journeys, wireframes, system flow) | [docs/miro/MIRO_BOARD.md](docs/miro/MIRO_BOARD.md) |
+| Jira import (8 epics, 18 stories, 20 tasks) | [docs/jira/jira_import.csv](docs/jira/jira_import.csv) |
+| AWS-style architecture (draw.io / PNG / Mermaid) | [docs/architecture/](docs/architecture/) |
+| Presentation with speaker notes | [docs/presentation/AI_Stock_Market_Assistant.pptx](docs/presentation/AI_Stock_Market_Assistant.pptx) |
+| Import guide (Miro, Jira, draw.io) | [docs/HOW_TO_IMPORT.md](docs/HOW_TO_IMPORT.md) |
+| Brief checklist | [docs/FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md) |
+
+![Architecture](docs/architecture/architecture.png)
 
 ## Contributing
 

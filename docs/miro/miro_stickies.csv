@@ -1,0 +1,15 @@
+1 Research,2 User journeys,3 Wireframes,4 System flow
+"PROBLEM: data, research and analysis are spread across many tools","J1 Discover: opens app, sees live watchlist","Assistant: chat + answer with chart, table, sources",React UI → FastAPI /api/chat
+Chatbots have no live data and invent numbers,J1 Ask: 'Is NVDA overbought?',Assistant: watchlist on the right,AI harness: context + permissions + tool budget
+Answers rarely show sources or assumptions,J1 See tool steps (MCP data),Technicals: 4 KPI cards on top,Gemini decides which tools to call
+"Persona: Ayesha, beginner investor — needs plain-language answers",J1 Understand: RSI explained + chart + table,Technicals: candlesticks + volume + SMA toggles,MCP server → Yahoo Finance (read tools)
+"Persona: Bilal, finance student — needs projections and what-if",J1 Check sources & assumptions,Technicals: RSI and MACD panels,"Python sandbox (compute tools, no internet)"
+"Persona: Sara, part-time trader — needs a fast technical read",J1 Go deeper: Technicals + Compare,"Fundamentals: income statement, earnings, valuation",Answer + sources + assumptions → UI
+"Charting sites: great charts, no explanation","J2 Plan: What-if page, USD 10k, 3 years",Compare: rebased lines + metrics table,Jobs: FastAPI → Redis queue → Celery worker
+"Finance portals: tables, no analysis",J2 Quick estimate appears instantly,What-if: sliders + projection band + shock table,Worker: fetch → sandbox → save (progress %)
+Spreadsheets: flexible but manual,J2 Run Monte Carlo in sandbox (Celery job),Analyses: task queue with progress + retries,Retries: 3x with 2s / 4s / 8s backoff
+INSIGHT: show sources + assumptions next to every number,"J2 Watch progress, automatic retry on error","Design: dark theme, emerald gains, red losses, amber warnings",Saved results in backend/data (S3 on AWS)
+INSIGHT: explain each indicator in one line,J2 Review bear / median / bull,"Numbers in JetBrains Mono, tabular",CI: GitHub Actions lint + tests + build
+INSIGHT: long calculations need progress + retries,J2 Saved result on Analyses page,,
+INSIGHT: AI-written code must run in a sandbox,,,
+"SCOPE: US stocks, daily data, educational use",,,
