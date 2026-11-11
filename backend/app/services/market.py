@@ -196,7 +196,7 @@ def get_fundamentals(ticker: str) -> dict:
         op, ni = _row(inc, "Operating Income"), _row(inc, "Net Income")
         eps = _row(inc, "Diluted EPS", "Basic EPS")
         for c in cols:
-            g = lambda s: _num(s[c], digits=2) if s is not None else None  # noqa: E731
+            g = lambda s, c=c: _num(s[c], digits=2) if s is not None else None  # noqa: E731
             income.append(
                 {
                     "year": f"FY{pd.Timestamp(c).year}",

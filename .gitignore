@@ -19,7 +19,7 @@ venv/
 *.egg-info/
 
 # Saved analysis results
-backend/data/results/
+backend/data/
 
 # OS / editor
 .DS_Store

@@ -4,7 +4,6 @@ os.environ["MARKET_FAKE"] = "1"  # offline synthetic data, no internet needed
 
 import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
-
 from app.harness.agent import _gemini_schema, build_extras, detect_tickers, split_assumptions  # noqa: E402
 from app.services import analysis, market  # noqa: E402
 
