@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor U as User (React UI)
+  participant API as FastAPI + AI harness
+  participant G as Gemini (LLM)
+  participant M as MCP server
+  participant Y as Yahoo Finance
+  participant S as Python sandbox
+  U->>API: POST /api/chat "Project $10k in MSFT"
+  API->>API: build context (system prompt + last 10 msgs)
+  API->>G: message + tool schemas
+  G-->>API: call get_technical_indicators(MSFT)
+  API->>API: permission check (read)
+  API->>M: MCP call_tool
+  M->>Y: price history
+  Y-->>M: candles
+  M-->>API: indicators + sources
+  API->>G: tool result
+  G-->>API: call run_projection(MSFT, 10000, 3)
+  API->>API: permission check (compute)
+  API->>S: monte_carlo script (isolated, no internet)
+  S-->>API: p10 / p50 / p90 paths
+  API->>G: tool result
+  G-->>API: final answer + ASSUMPTIONS
+  API-->>U: text + table + chart + sources + assumptions

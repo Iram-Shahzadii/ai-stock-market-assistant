@@ -1,0 +1,237 @@
+Issue ID,Issue Type,Summary,Epic Name,Description,Acceptance Criteria,Assignee,Owner,Priority,Labels,Story Points,Parent,Status
+1,Epic,UX research & design (Miro),UX research & design (Miro),"Research, personas, user journeys, wireframes, system flow on Miro",,Iram Shahzadi,Iram Shahzadi,High,ux,,,Done
+2,Epic,Frontend UI (React),Frontend UI (React),Vite + React app in the Institutional Sovereign design system with animations,,Iram Shahzadi,Iram Shahzadi,High,frontend,,,Done
+3,Epic,Market data & MCP integration,Market data & MCP integration,Yahoo Finance data via an MCP server; SEC EDGAR links,,Iram Shahzadi,Iram Shahzadi,High,mcp,,,Done
+4,Epic,AI harness & conversational analysis,AI harness & conversational analysis,"Gemini model, context, permissions, tool calling, sources & assumptions",,Iram Shahzadi,Iram Shahzadi,High,ai,,,Done
+5,Epic,Python sandbox & calculations,Python sandbox & calculations,"Isolated sandbox for projections, what-if, backtests and custom code",,Iram Shahzadi,Iram Shahzadi,High,sandbox,,,Done
+6,Epic,Background processing,Background processing,"Celery workers + Redis queue with progress, retries and saved results",,Iram Shahzadi,Iram Shahzadi,High,workers,,,Done
+7,Epic,"GitHub, CI & DevOps","GitHub, CI & DevOps","Repository, branches, PRs, GitHub Actions, Docker compose",,Iram Shahzadi,Iram Shahzadi,High,devops,,,Done
+8,Epic,Deliverables & presentation,Deliverables & presentation,"Jira board, AWS architecture diagram, slide deck, demo",,Iram Shahzadi,Iram Shahzadi,High,docs,,,Done
+9,Story,"As a team, we want user research and personas so the product solves real pains",,"As a team, we want user research and personas so the product solves real pains
+
+Acceptance criteria:
+- 3 personas with needs and pains
+- Competitor/alternative scan table
+- 4+ key insights on the Miro Research frame","- 3 personas with needs and pains
+- Competitor/alternative scan table
+- 4+ key insights on the Miro Research frame",Iram Shahzadi,Iram Shahzadi,Medium,ux,3,1,Done
+10,Story,"As a designer, I want user journeys and wireframes for the main screens",,"As a designer, I want user journeys and wireframes for the main screens
+
+Acceptance criteria:
+- 2 user journeys with stages and emotions
+- Wireframes for Assistant, Technicals, Analyses
+- System flow diagram on Miro","- 2 user journeys with stages and emotions
+- Wireframes for Assistant, Technicals, Analyses
+- System flow diagram on Miro",Iram Shahzadi,Iram Shahzadi,Medium,ux,3,1,Done
+11,Story,"As a user, I want a chat interface to ask questions about stocks",,"As a user, I want a chat interface to ask questions about stocks
+
+Acceptance criteria:
+- Messages animate in
+- Thinking state shows tool steps
+- Every answer shows sources and assumptions
+- Suggested questions on empty chat","- Messages animate in
+- Thinking state shows tool steps
+- Every answer shows sources and assumptions
+- Suggested questions on empty chat",Iram Shahzadi,Iram Shahzadi,High,frontend,5,2,Done
+12,Story,"As a user, I want an interactive candlestick chart with indicators",,"As a user, I want an interactive candlestick chart with indicators
+
+Acceptance criteria:
+- Candles + volume + SMA 20/50/200 toggles
+- RSI (70/30 bands) and MACD panels
+- Range switch 3M/6M/1Y
+- Hover shows OHLC","- Candles + volume + SMA 20/50/200 toggles
+- RSI (70/30 bands) and MACD panels
+- Range switch 3M/6M/1Y
+- Hover shows OHLC",Iram Shahzadi,Iram Shahzadi,High,frontend,5,2,Done
+13,Story,"As a user, I want fundamentals tables (statements, earnings, valuation)",,"As a user, I want fundamentals tables (statements, earnings, valuation)
+
+Acceptance criteria:
+- Income statement last 4 years
+- Earnings estimate vs actual with surprise %
+- Valuation ratios; numbers right-aligned in mono font","- Income statement last 4 years
+- Earnings estimate vs actual with surprise %
+- Valuation ratios; numbers right-aligned in mono font",Iram Shahzadi,Iram Shahzadi,Medium,frontend,3,2,Done
+14,Story,"As a user, I want to compare stocks side by side",,"As a user, I want to compare stocks side by side
+
+Acceptance criteria:
+- Select 2-4 tickers
+- Rebased performance chart
+- Return, volatility, drawdown, P/E table","- Select 2-4 tickers
+- Rebased performance chart
+- Return, volatility, drawdown, P/E table",Iram Shahzadi,Iram Shahzadi,Medium,frontend,3,2,Done
+15,Story,"As a user, I want what-if and projection controls",,"As a user, I want what-if and projection controls
+
+Acceptance criteria:
+- Inputs for amount, horizon, return, shock
+- Projection band chart
+- Bear/base/bull cards","- Inputs for amount, horizon, return, shock
+- Projection band chart
+- Bear/base/bull cards",Iram Shahzadi,Iram Shahzadi,Medium,frontend,3,2,Done
+16,Story,"As the AI, I need market data tools exposed over MCP",,"As the AI, I need market data tools exposed over MCP
+
+Acceptance criteria:
+- MCP server exposes 5 tools
+- Backend connects via stdio and falls back to in-process
+- Invalid tickers rejected","- MCP server exposes 5 tools
+- Backend connects via stdio and falls back to in-process
+- Invalid tickers rejected",Iram Shahzadi,Iram Shahzadi,High,mcp,5,3,Done
+17,Story,"As a user, I want live prices, history and fundamentals from a free source",,"As a user, I want live prices, history and fundamentals from a free source
+
+Acceptance criteria:
+- yfinance used, no API key
+- 5-minute cache
+- UI falls back to demo data with a DEMO badge when offline","- yfinance used, no API key
+- 5-minute cache
+- UI falls back to demo data with a DEMO badge when offline",Iram Shahzadi,Iram Shahzadi,Medium,backend,3,3,Done
+18,Story,"As a user, I want the assistant to decide which analysis to run (tool calling)",,"As a user, I want the assistant to decide which analysis to run (tool calling)
+
+Acceptance criteria:
+- Gemini function calling with tool schemas
+- Max 6 tool calls per answer
+- Rule-based fallback if no key or model error","- Gemini function calling with tool schemas
+- Max 6 tool calls per answer
+- Rule-based fallback if no key or model error",Iram Shahzadi,Iram Shahzadi,High,ai,8,4,Done
+19,Story,"As a user, I want every answer to cite sources and list assumptions",,"As a user, I want every answer to cite sources and list assumptions
+
+Acceptance criteria:
+- Sources collected from tool results
+- Model ends with ASSUMPTIONS section, parsed by harness
+- Table + chart attached from tool data","- Sources collected from tool results
+- Model ends with ASSUMPTIONS section, parsed by harness
+- Table + chart attached from tool data",Iram Shahzadi,Iram Shahzadi,Medium,ai,3,4,Done
+20,Story,"As an operator, I want permissions on what the AI can do",,"As an operator, I want permissions on what the AI can do
+
+Acceptance criteria:
+- Tools tagged read or compute
+- Gateway checks permission before each call
+- Unknown tools rejected","- Tools tagged read or compute
+- Gateway checks permission before each call
+- Unknown tools rejected",Iram Shahzadi,Iram Shahzadi,Medium,security,2,4,Done
+21,Story,"As a user, I want projections and what-if scenarios computed in Python",,"As a user, I want projections and what-if scenarios computed in Python
+
+Acceptance criteria:
+- Monte Carlo (5,000 paths) script
+- What-if shock script
+- SMA crossover backtest script","- Monte Carlo (5,000 paths) script
+- What-if shock script
+- SMA crossover backtest script",Iram Shahzadi,Iram Shahzadi,High,sandbox,5,5,Done
+22,Story,"As an operator, I want AI-written code to run isolated",,"As an operator, I want AI-written code to run isolated
+
+Acceptance criteria:
+- Separate process with timeout
+- No internet, read-only, non-root, CPU/RAM limits in Docker
+- Unsafe imports/attributes blocked","- Separate process with timeout
+- No internet, read-only, non-root, CPU/RAM limits in Docker
+- Unsafe imports/attributes blocked",Iram Shahzadi,Iram Shahzadi,High,security,5,5,Done
+23,Story,"As a user, I want long analyses to run in the background with progress",,"As a user, I want long analyses to run in the background with progress
+
+Acceptance criteria:
+- POST /api/jobs returns job id
+- Progress %, current step, pipeline segments
+- Analyses page polls and animates","- POST /api/jobs returns job id
+- Progress %, current step, pipeline segments
+- Analyses page polls and animates",Iram Shahzadi,Iram Shahzadi,High,workers,5,6,Done
+24,Story,"As a user, I want failed jobs retried and results saved",,"As a user, I want failed jobs retried and results saved
+
+Acceptance criteria:
+- 3 automatic retries with backoff
+- Bad input fails without retry
+- Results saved and visible in history; manual retry button","- 3 automatic retries with backoff
+- Bad input fails without retry
+- Results saved and visible in history; manual retry button",Iram Shahzadi,Iram Shahzadi,Medium,workers,3,6,Done
+25,Story,"As a team, we want a GitHub repo with branches, PRs and automated checks",,"As a team, we want a GitHub repo with branches, PRs and automated checks
+
+Acceptance criteria:
+- Feature branches merged via PRs
+- CI: backend lint+tests, frontend lint+build, Docker build
+- CONTRIBUTING and PR template","- Feature branches merged via PRs
+- CI: backend lint+tests, frontend lint+build, Docker build
+- CONTRIBUTING and PR template",Iram Shahzadi,Iram Shahzadi,Medium,devops,3,7,Done
+26,Story,"As a presenter, I want architecture, Jira and a short deck for the demo",,"As a presenter, I want architecture, Jira and a short deck for the demo
+
+Acceptance criteria:
+- AWS-style diagram (draw.io + PNG)
+- Jira CSV with epics, stories, tasks, owners, AC
+- PowerPoint with speaker notes","- AWS-style diagram (draw.io + PNG)
+- Jira CSV with epics, stories, tasks, owners, AC
+- PowerPoint with speaker notes",Iram Shahzadi,Iram Shahzadi,Medium,docs,3,8,Done
+27,Task,Write personas and competitor scan on Miro,,"Write personas and competitor scan on Miro
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,1,Done
+28,Task,"Render journeys, wireframes and system flow images",,"Render journeys, wireframes and system flow images
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,1,Done
+29,Task,Set up Vite + React + Framer Motion + router,,"Set up Vite + React + Framer Motion + router
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,2,Done
+30,Task,Define design tokens as CSS variables (tokens.css),,"Define design tokens as CSS variables (tokens.css)
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,2,Done
+31,Task,"Build layout: sidebar, ticker tape, page transitions, mobile bottom nav",,"Build layout: sidebar, ticker tape, page transitions, mobile bottom nav
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,2,Done
+32,Task,"Build UI kit: cards, badges, tables, skeletons, progress",,"Build UI kit: cards, badges, tables, skeletons, progress
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,2,Done
+33,Task,"Implement market.py (candles, quote, profile, fundamentals)",,"Implement market.py (candles, quote, profile, fundamentals)
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,3,Done
+34,Task,Implement MCP server and gateway with fallback,,"Implement MCP server and gateway with fallback
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,3,Done
+35,Task,Implement Gemini tool-calling loop (agent.py),,"Implement Gemini tool-calling loop (agent.py)
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,4,Done
+36,Task,Connect chat UI to /api/chat with history,,"Connect chat UI to /api/chat with history
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,4,Done
+37,Task,Write sandbox runner with AST safety checks,,"Write sandbox runner with AST safety checks
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,5,Done
+38,Task,Write sandbox Dockerfile and HTTP server,,"Write sandbox Dockerfile and HTTP server
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,5,Done
+39,Task,"Implement job store, tasks and Celery worker",,"Implement job store, tasks and Celery worker
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,6,Done
+40,Task,Build Analyses page with polling and retry,,"Build Analyses page with polling and retry
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,6,Done
+41,Task,Write pytest suite (16 tests) and ruff config,,"Write pytest suite (16 tests) and ruff config
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,7,Done
+42,Task,Add GitHub Actions workflow and docker-compose,,"Add GitHub Actions workflow and docker-compose
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,7,Done
+43,Task,Create draw.io AWS architecture diagram,,"Create draw.io AWS architecture diagram
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,8,Done
+44,Task,Create PowerPoint deck with speaker notes,,"Create PowerPoint deck with speaker notes
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,8,Done
+45,Task,Add screenshots to README,,"Add screenshots to README
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,7,To Do
+46,Task,Rehearse 5-minute demo,,"Rehearse 5-minute demo
+
+Acceptance criteria:
+- Done when merged to main and CI is green",- Done when merged to main and CI is green,Iram Shahzadi,Iram Shahzadi,Medium,task,1,8,To Do

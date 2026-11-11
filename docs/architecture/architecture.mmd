@@ -1,0 +1,74 @@
+%% AWS-style architecture — AI Stock Market Assistant
+flowchart TB
+  user([Investor / Student<br/>Browser]):::actor
+
+  subgraph AWS["AWS Cloud (us-east-1)"]
+    direction TB
+    cf["Amazon CloudFront<br/>CDN"]:::edge
+    s3web[("Amazon S3<br/>React build (Vite)")]:::store
+
+    subgraph VPC["VPC"]
+      direction LR
+      subgraph PUB["Public subnet"]
+        alb["Application<br/>Load Balancer"]:::edge
+      end
+
+      subgraph PRIV["Private subnet (NAT egress)"]
+        api["ECS Fargate: FastAPI<br/>AI harness + tool calling"]:::compute
+        mcp["MCP server<br/>(market data tools, sidecar)"]:::compute
+        worker["ECS Fargate: Celery workers<br/>progress · retries"]:::compute
+        redis[("ElastiCache Redis<br/>task queue / broker")]:::queue
+      end
+
+      subgraph ISO["Isolated subnet (NO internet)"]
+        sandbox["ECS Fargate: Python sandbox<br/>read-only · non-root · 512 MB"]:::sandbox
+      end
+    end
+
+    s3res[("Amazon S3<br/>saved analysis results")]:::store
+    secrets["Secrets Manager<br/>GEMINI_API_KEY"]:::ops
+    cw["CloudWatch<br/>logs + metrics"]:::ops
+    ecr["Amazon ECR<br/>container images"]:::ops
+  end
+
+  subgraph EXT["External services"]
+    gemini["Google Gemini API<br/>LLM + function calling"]:::ext
+    yahoo["Yahoo Finance<br/>prices · fundamentals"]:::ext
+    edgar["SEC EDGAR<br/>filings"]:::ext
+  end
+
+  gh["GitHub Actions CI<br/>lint · tests · build"]:::ops
+
+  user -- HTTPS --> cf
+  cf --> s3web
+  cf -- /api --> alb --> api
+  api -- stdio MCP --> mcp
+  mcp --> yahoo
+  mcp -.-> edgar
+  api -- prompt + tools --> gemini
+  api -- enqueue job --> redis
+  redis -- consume --> worker
+  worker -- progress --> redis
+  api -- run script --> sandbox
+  worker -- run script --> sandbox
+  worker -- save result --> s3res
+  api -- read history --> s3res
+  secrets -.-> api
+  api -.-> cw
+  worker -.-> cw
+  gh -- push images --> ecr -.-> api
+
+  classDef actor fill:#1e2638,stroke:#adc6ff,color:#dfe2ee
+  classDef edge fill:#1e2638,stroke:#adc6ff,color:#dfe2ee
+  classDef compute fill:#0f2a20,stroke:#4edea3,color:#dfe2ee
+  classDef queue fill:#2a1f0a,stroke:#ffb95f,color:#dfe2ee
+  classDef sandbox fill:#2a1416,stroke:#ffb4ab,color:#dfe2ee
+  classDef store fill:#181c24,stroke:#86948a,color:#dfe2ee
+  classDef ops fill:#181c24,stroke:#86948a,color:#bbcabf
+  classDef ext fill:#262a33,stroke:#c4a5ff,color:#dfe2ee
+  style AWS fill:#0f131c,stroke:#ffb95f,color:#ffb95f
+  style VPC fill:#131a26,stroke:#4edea3,color:#4edea3
+  style PUB fill:#1c2028,stroke:#3c4a42,color:#bbcabf
+  style PRIV fill:#1c2028,stroke:#3c4a42,color:#bbcabf
+  style ISO fill:#1c1416,stroke:#ffb4ab,color:#ffb4ab
+  style EXT fill:#0f131c,stroke:#c4a5ff,color:#c4a5ff
