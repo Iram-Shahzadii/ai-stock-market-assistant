@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AnimatedNumber, Badge, Card, DataTable, Provenance, TickerSelect } from '../components/ui';
+import { AnimatedNumber, Badge, Card, DataTable, ProgressBar, Provenance, TickerSelect } from '../components/ui';
 import LineSvg from '../components/LineSvg';
 import { TICKERS } from '../data/mock';
-import { fetchHistory } from '../api/client';
+import { fetchHistory, submitJob, waitForJob } from '../api/client';
+import Icon from '../components/Icon';
 import { useApi } from '../lib/useApi';
 import { fmtPct, fmtPrice, tone } from '../lib/format';
 
@@ -55,7 +56,22 @@ export default function WhatIfPage() {
   const { data: hist } = useApi(() => fetchHistory(symbol, '1y'), [symbol]);
   const sigma = useMemo(() => histVol(hist?.candles), [hist]);
   const q = { price: hist?.candles?.at(-1)?.close ?? 100 };
-  const p = useMemo(() => project({ amount, years, mu, sigma }), [amount, years, mu, sigma]);
+  const analytic = useMemo(() => project({ amount, years, mu, sigma }), [amount, years, mu, sigma]);
+  const [job, setJob] = useState(null); // sandbox Monte Carlo job
+  const sim = job?.status === 'success' ? job.result : null;
+  const simKey = `${symbol}-${amount}-${years}-${mu}`;
+  const simValid = sim && job.key === simKey;
+  const p = simValid ? { mid: sim.p50, upper: sim.p90, lower: sim.p10 } : analytic;
+
+  async function runSandbox() {
+    try {
+      const j = await submitJob('projection', { ticker: symbol, amount, years, annual_return: mu, simulations: 5000 });
+      setJob({ ...j, key: simKey });
+      await waitForJob(j.id, (u) => setJob({ ...u, key: simKey }));
+    } catch (e) {
+      setJob({ status: 'failed', error: `Backend not reachable: ${e.message}`, key: simKey });
+    }
+  }
 
   const shares = amount / q.price;
   const shockedPrice = q.price * (1 + shock / 100);
@@ -63,9 +79,10 @@ export default function WhatIfPage() {
 
   const scenarios = [
     ['Bear (10th pct)', p.lower.at(-1)],
-    ['Base (expected)', p.mid.at(-1)],
+    [simValid ? 'Median (simulated)' : 'Base (expected)', p.mid.at(-1)],
     ['Bull (90th pct)', p.upper.at(-1)],
   ];
+  const running = job && ['queued', 'running', 'retrying'].includes(job.status);
 
   return (
     <>
@@ -99,9 +116,23 @@ export default function WhatIfPage() {
           className="col-8"
           i={1}
           title={`Projected value of USD ${amount.toLocaleString()} over ${years} years`}
-          action={<Badge tone="info">10th–90th percentile band</Badge>}
+          action={
+            <div className="row wrap">
+              <Badge tone={simValid ? 'gain' : 'info'}>{simValid ? `SANDBOX · ${sim.simulations.toLocaleString()} PATHS` : 'QUICK ESTIMATE'}</Badge>
+              <button className="btn btn-sm btn-primary" onClick={runSandbox} disabled={running}>
+                <Icon name="spark" size={14} /> {running ? 'Simulating…' : 'Run Monte Carlo in sandbox'}
+              </button>
+            </div>
+          }
         >
+          {job && job.key === simKey && job.status !== 'success' && (
+            <div style={{ marginBottom: 12 }}>
+              <ProgressBar value={job.progress || 0} running={running} />
+              <div className={`body-sm ${job.status === 'failed' ? 'loss' : 'muted'}`} style={{ marginTop: 6 }}>{job.error || job.step}</div>
+            </div>
+          )}
           <LineSvg
+            key={simValid ? job.id : 'analytic'}
             series={[{ name: 'Expected', values: p.mid, color: '#4edea3', width: 2.5 }, { name: 'Bull', values: p.upper, color: 'rgba(78,222,163,0.5)', width: 1, dashed: true }, { name: 'Bear', values: p.lower, color: 'rgba(255,180,171,0.6)', width: 1, dashed: true }]}
             band={{ upper: p.upper, lower: p.lower, color: 'rgba(16,185,129,0.08)' }}
             height={280}
@@ -134,7 +165,8 @@ export default function WhatIfPage() {
         <Card className="col-6" i={3} title="Assumptions & method">
           <Provenance
             sources={[{ label: `Price history: ${hist?.demo ? 'demo data (backend offline)' : 'Yahoo Finance via yfinance'}`, url: `https://finance.yahoo.com/quote/${symbol}` }]}
-            assumptions={[
+            assumptions={simValid ? [...sim.assumptions, `Computed in the Python sandbox (${job.sandbox}) by a ${job.engine} worker.`] : [
+              'Quick estimate: analytic log-normal band. Press “Run Monte Carlo in sandbox” for the full simulation.',
               'Prices follow geometric Brownian motion (log-normal returns).',
               `Volatility = ${(sigma * 100).toFixed(1)}% from 1 year of daily returns.`,
               'No dividends, taxes or trading fees.',

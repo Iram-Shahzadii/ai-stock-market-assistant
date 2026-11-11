@@ -34,8 +34,11 @@ ai-stock-market-assistant/
 │       ├── lib/       indicators + formatting
 │       ├── pages/     Chat, Technicals, Fundamentals, Compare, What-if, Analyses
 │       └── styles/    design tokens + global CSS (animations)
-├── backend/           FastAPI + Celery + MCP (Hissa B/C)
-├── docs/              setup guide, deliverables
+├── backend/           FastAPI API, AI harness, MCP server, Celery worker
+├── sandbox/           isolated Python sandbox (Docker) + analysis scripts
+├── docs/              deliverables (Miro, Jira, architecture, presentation)
+├── .github/           CI workflow (lint + tests + build) and PR template
+├── docker-compose.yml redis + sandbox + backend + worker + frontend
 ├── .env.example       copy to .env and add your keys
 └── README.md
 ```
@@ -64,6 +67,40 @@ npm run dev
 Open http://localhost:5173 (app) and http://localhost:8000/docs (API).
 If the backend is offline the UI automatically shows demo data with a **DEMO DATA** badge.
 
+Without Docker, background jobs run in a local worker thread and the sandbox runs as an isolated
+subprocess, so everything works on a plain Windows laptop.
+
+### Option B: everything in Docker (Redis + Celery + sandbox container)
+
+```bash
+docker compose up --build
+```
+
+| Service | What it does |
+|---|---|
+| `redis` | task queue / broker for Celery |
+| `worker` | Celery worker: long analyses with progress, 3 automatic retries, saved results |
+| `sandbox` | Python sandbox: no internet, read-only filesystem, non-root, 512 MB RAM, 1 CPU |
+| `backend` | FastAPI + AI harness + MCP market-data server |
+| `frontend` | React app (Vite) |
+
+### Option C: Celery worker on Windows without Docker for the app
+
+```bash
+docker run -d -p 6379:6379 redis:7-alpine          # Redis only
+cd backend && .venv\Scripts\activate
+celery -A app.worker worker --pool=solo --loglevel=info
+```
+
+## Tests and checks
+
+```bash
+cd backend && pytest -q        # 16 tests: indicators, harness, sandbox safety, jobs + retries
+cd frontend && npm run lint && npm run build
+```
+
+GitHub Actions runs backend lint + tests, frontend lint + build, and Docker image builds on every pull request.
+
 ## Screenshots
 
 _Add screenshots here after running the app (save them in `docs/screenshots/`)._
@@ -78,4 +115,4 @@ _Add screenshots here after running the app (save them in `docs/screenshots/`)._
 
 ## Contributing
 
-Work happens on feature branches (`feature/...`) and is merged into `main` through pull requests. See `CONTRIBUTING.md` (added in Hissa C).
+Work happens on feature branches (`feature/...`) and is merged into `main` through pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md).

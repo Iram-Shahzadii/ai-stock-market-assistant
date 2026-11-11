@@ -12,7 +12,8 @@ const SUGGESTIONS = [
   'Give me a technical summary of NVDA',
   'Is AAPL overbought right now?',
   'Compare MSFT, AAPL and NVDA over 1 year',
-  'How strong are TSLA fundamentals?',
+  'Project $10,000 in MSFT over 3 years',
+  'What if TSLA drops 30%?',
 ];
 const THINKING = ['Planning the analysis', 'Calling market-data tools (MCP)', 'Running calculations', 'Writing the answer'];
 const COLORS = ['#4edea3', '#adc6ff', '#ffb95f', '#ffb4ab', '#c4a5ff'];
@@ -62,6 +63,22 @@ function AnswerChart({ chart }) {
       <div style={{ marginTop: 10 }}>
         <div className="label-sm muted" style={{ marginBottom: 4 }}>{chart.symbol} · last {vals.length} sessions</div>
         <LineSvg series={[{ name: chart.symbol, values: vals, color: up ? '#4edea3' : '#ffb4ab' }]} height={150} yFormat={(v) => v.toFixed(0)} labels={[chart.points[0].time, chart.points.at(-1).time]} />
+      </div>
+    );
+  }
+  if (chart.type === 'projection') {
+    return (
+      <div style={{ marginTop: 10 }}>
+        <div className="legend-row" style={{ marginBottom: 4 }}>
+          <span><i style={{ background: '#4edea3' }} />Median</span><span><i style={{ background: 'rgba(16,185,129,0.4)' }} />10th–90th pct</span>
+        </div>
+        <LineSvg
+          series={[{ name: 'p50', values: chart.p50, color: '#4edea3', width: 2.5 }]}
+          band={{ upper: chart.p90, lower: chart.p10, color: 'rgba(16,185,129,0.12)' }}
+          height={160}
+          yFormat={(v) => `${(v / 1000).toFixed(1)}K`}
+          labels={['Today', 'End of horizon']}
+        />
       </div>
     );
   }

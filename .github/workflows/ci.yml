@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend · lint + tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MARKET_FAKE: "1"   # offline synthetic market data, tests never hit Yahoo
+      MCP_MODE: "off"
+      JOBS_MODE: "local"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt ruff pytest
+      - name: Lint (ruff)
+        run: ruff check . ../sandbox
+      - name: Tests (pytest)
+        run: pytest -q
+
+  frontend:
+    name: Frontend · lint + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --no-audit --no-fund
+      - name: Lint (eslint)
+        run: npm run lint
+      - name: Build (vite)
+        run: npm run build
+
+  docker:
+    name: Docker · build images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sandbox image
+        run: docker build -t stock-sandbox ./sandbox
+      - name: Build backend image
+        run: docker build -t stock-backend ./backend
+      - name: Sandbox smoke test (no network)
+        run: |
+          echo '{"code": "result = sum(inputs[\"x\"])", "inputs": {"x": [1, 2, 3]}}' \
+            | docker run --rm -i --network none stock-sandbox python runner.py | tee out.json
+          grep -q '"result": 6' out.json

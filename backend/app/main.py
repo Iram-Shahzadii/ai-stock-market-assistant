@@ -16,7 +16,9 @@ from app.config import settings
 from app.harness.agent import run_chat
 from app.harness.gateway import gateway
 from app.harness.tools import TOOLS
-from app.services import analysis, market
+from app.jobs import manager as jobs
+from app.jobs import store as job_store
+from app.services import analysis, market, sandbox
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
@@ -53,6 +55,8 @@ def health():
         "ai": "gemini" if settings.ai_enabled else "rules",
         "model": settings.gemini_model if settings.ai_enabled else None,
         "mcp": gateway.mcp_connected,
+        "sandbox": sandbox.mode(),
+        "jobs": jobs.engine(),
         "tools": sorted(TOOLS),
     }
 
@@ -114,3 +118,40 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
     return await run_chat(req.message, [h.model_dump() for h in req.history])
+
+
+# ---------------- Background jobs (Celery + Redis, or local fallback) ----------------
+class JobRequest(BaseModel):
+    type: str = Field(..., description="projection | what_if | backtest_sma | compare")
+    params: dict = {}
+
+
+@app.post("/api/jobs", status_code=202)
+def create_job(req: JobRequest):
+    try:
+        return jobs.submit(req.type, req.params)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.get("/api/jobs")
+def list_jobs(limit: int = 50):
+    return {"engine": jobs.engine(), "jobs": job_store.list_jobs(limit)}
+
+
+@app.get("/api/jobs/{job_id}")
+def get_job(job_id: str):
+    try:
+        return job_store.get(job_id)
+    except KeyError as e:
+        raise HTTPException(404, "Job not found") from e
+
+
+@app.post("/api/jobs/{job_id}/retry", status_code=202)
+def retry_job(job_id: str):
+    try:
+        return jobs.retry(job_id)
+    except KeyError as e:
+        raise HTTPException(404, "Job not found") from e
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e

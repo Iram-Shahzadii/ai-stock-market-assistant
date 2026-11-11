@@ -1,0 +1,64 @@
+# One command for everything:  docker compose up --build
+# App: http://localhost:5173   API: http://localhost:8000/docs
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  # Isolated Python sandbox: no internet (internal network), read-only, non-root, limited CPU/RAM
+  sandbox:
+    build: ./sandbox
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 64
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [sandbox_net]
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      SANDBOX_URL: http://sandbox:8080
+      JOBS_MODE: celery
+      DATA_DIR: /app/data
+    ports: ["8000:8000"]
+    volumes: ["./backend/data:/app/data"]
+    depends_on:
+      redis: { condition: service_healthy }
+      sandbox: { condition: service_started }
+    networks: [default, sandbox_net]
+
+  worker:
+    build: ./backend
+    command: celery -A app.worker worker --loglevel=info --concurrency=2
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      SANDBOX_URL: http://sandbox:8080
+      DATA_DIR: /app/data
+    volumes: ["./backend/data:/app/data"]
+    depends_on:
+      redis: { condition: service_healthy }
+    networks: [default, sandbox_net]
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports: ["5173:5173"]
+    volumes: ["./frontend:/app", "/app/node_modules"]
+    depends_on: [backend]
+
+networks:
+  sandbox_net:
+    internal: true # no route to the internet

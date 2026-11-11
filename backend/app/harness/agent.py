@@ -31,13 +31,15 @@ Rules:
 - If the user does not name a ticker, ask which one (or use the one from the recent conversation).
 - Explain clearly for beginners: say what each indicator means in one short phrase.
 - Be concise: 2-4 short paragraphs or a few bullet points. Use **bold** for key numbers.
+- For projections, what-if scenarios, backtests or any custom maths, use the sandbox tools
+  (run_projection, run_what_if, run_backtest, run_python) instead of calculating in your head.
 - Mention risks. This is educational analysis, not financial advice.
 - Finish with a line "ASSUMPTIONS:" followed by 1-4 bullet points ("- ...") listing the
   assumptions behind your answer (time period, data source, method).
 """
 
 # Large arrays are useful for charts but waste model tokens
-HIDDEN_KEYS = {"recentCloses", "rebased"}
+HIDDEN_KEYS = {"recentCloses", "rebased", "p10", "p50", "p90", "equity"}
 TICKER_WORD = re.compile(r"\b[A-Z]{1,5}\b")
 NAME_TO_TICKER = {"APPLE": "AAPL", "MICROSOFT": "MSFT", "NVIDIA": "NVDA", "TESLA": "TSLA", "AMAZON": "AMZN", "GOOGLE": "GOOGL", "ALPHABET": "GOOGL", "META": "META", "NETFLIX": "NFLX"}
 STOPWORDS = {"I", "A", "AN", "THE", "IS", "IT", "OF", "TO", "VS", "AND", "OR", "PE", "RSI", "MACD", "SMA", "EMA", "EPS", "IF", "US", "USD", "AI", "ME", "MY", "ON", "IN", "AT", "BE", "DO", "SO", "UP", "WHAT", "HOW", "WHY"}
@@ -112,7 +114,16 @@ def build_extras(calls: list[dict]) -> dict:
 
     by_name = {c["name"]: c.get("result") for c in calls if c.get("ok")}
     tech, fund, comp, quote = (by_name.get(k) for k in ("get_technical_indicators", "get_fundamentals", "compare_stocks", "get_quote"))
-    if comp:
+    proj, whatif, bt = (by_name.get(k) for k in ("run_projection", "run_what_if", "run_backtest"))
+    if proj:
+        f = proj["final"]
+        table = {"columns": ["Outcome", "Value (USD)"], "rows": [["Bear (10th pct)", f["p10"]], ["Median", f["p50"]], ["Bull (90th pct)", f["p90"]], ["Probability of loss %", round(f["probLoss"] * 100, 1)], ["Sandbox", proj.get("sandbox")]]}
+        chart = {"type": "projection", "p10": proj["p10"], "p50": proj["p50"], "p90": proj["p90"]}
+    elif whatif:
+        table = {"columns": ["Item", "Value"], "rows": [["Price now", whatif["price"]], ["Price after shock", whatif["newPrice"]], ["Position before", whatif["valueBefore"]], ["Position after", whatif["valueAfter"]], ["Profit / loss", whatif["pnl"]], ["Recovery (years)", whatif["recoveryYears"]], ["Sandbox", whatif.get("sandbox")]]}
+    elif bt:
+        table = {"columns": ["Metric", "Value"], "rows": [["Strategy return %", bt["strategyReturnPct"]], ["Buy & hold %", bt["buyHoldReturnPct"]], ["Trades", bt["trades"]], ["Max drawdown %", bt["strategyMaxDrawdownPct"]], ["Sandbox", bt.get("sandbox")]]}
+    elif comp:
         table = {
             "columns": ["Ticker", "Return %", "Volatility %", "Max drawdown %", "RSI 14"],
             "rows": [[r["symbol"], r["returnPct"], r["volatilityPct"], r["maxDrawdownPct"], r["rsi14"]] for r in comp["rows"]],
@@ -210,6 +221,22 @@ async def _run_rules(message: str, history: list[dict]) -> tuple[str, list[dict]
         return f"Over the last year **{r['leader']}** performed best.\n\n" + "\n".join(lines), calls
 
     t = tickers[0]
+    if any(w in low for w in ("project", "forecast", "monte carlo", "future", "invest")):
+        r = await _run_tool("run_projection", {"ticker": t}, calls)
+        if "error" in r:
+            return f"Projection failed: {r['error']}", calls
+        f = r["final"]
+        return (f"Monte Carlo projection for **{t}** (USD 10,000 over 3 years, {r['simulations']:,} paths in the sandbox): "
+                f"median **${f['p50']:,.0f}**, range ${f['p10']:,.0f}–${f['p90']:,.0f}; chance of loss {f['probLoss']:.0%}."), calls
+    if any(w in low for w in ("drop", "fall", "crash", "what if", "shock")):
+        import re as _re
+        m = _re.search(r"(-?\d+)\s*%", message)
+        shock = -abs(float(m.group(1))) if m else -20
+        r = await _run_tool("run_what_if", {"ticker": t, "shock_pct": shock}, calls)
+        if "error" in r:
+            return f"What-if failed: {r['error']}", calls
+        return (f"If **{t}** moves {shock:.0f}%, a USD 10,000 position becomes **${r['valueAfter']:,.0f}** "
+                f"(P/L ${r['pnl']:,.0f}). At 10% yearly growth it would take about {r['recoveryYears']} years to recover."), calls
     tech = await _run_tool("get_technical_indicators", {"ticker": t}, calls)
     if "error" in tech:
         return f"I could not load data for {t}: {tech['error']}", calls

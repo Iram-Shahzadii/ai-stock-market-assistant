@@ -91,3 +91,27 @@ export async function sendChat(message, history = []) {
     return { ...(await demoChat(message)), demo: true, error: e.message };
   }
 }
+
+// ---- background jobs (Celery / local worker) ----
+export async function listJobs() {
+  try {
+    const r = await http('/api/jobs', { timeout: 10000 });
+    return { ...r, demo: false };
+  } catch {
+    const { MOCK_JOBS } = await import('../data/mock');
+    return { engine: 'demo', jobs: MOCK_JOBS, demo: true };
+  }
+}
+export const submitJob = (type, params) => http('/api/jobs', { method: 'POST', body: JSON.stringify({ type, params }) });
+export const getJob = (id) => http(`/api/jobs/${id}`);
+export const retryJob = (id) => http(`/api/jobs/${id}/retry`, { method: 'POST' });
+
+// Poll a job until it finishes; onUpdate is called with every new state
+export async function waitForJob(id, onUpdate, intervalMs = 1000) {
+  for (;;) {
+    const j = await getJob(id);
+    onUpdate?.(j);
+    if (j.status === 'success' || j.status === 'failed') return j;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}

@@ -19,6 +19,12 @@ class Settings:
     mcp_mode: str = os.getenv("MCP_MODE", "auto")
     max_tool_calls: int = int(os.getenv("MAX_TOOL_CALLS", "6"))
     cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "300"))
+    # Sandbox: empty = run locally in an isolated subprocess; set to http://sandbox:8080 in Docker
+    sandbox_url: str = os.getenv("SANDBOX_URL", "").strip()
+    sandbox_timeout: int = int(os.getenv("SANDBOX_TIMEOUT", "30"))
+    # Jobs: auto = Celery if Redis is reachable, else in-process worker threads
+    jobs_mode: str = os.getenv("JOBS_MODE", "auto")
+    data_dir: Path = Path(os.getenv("DATA_DIR", str(ROOT / "backend" / "data")))
 
     @property
     def ai_enabled(self) -> bool:
