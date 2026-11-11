@@ -1,0 +1,101 @@
+/* =========================================================
+   Institutional Sovereign — design tokens (source of truth:
+   design file front-matter). Stock-market mapping:
+   primary  = gains / positive / primary actions
+   error    = losses / negative
+   tertiary = warnings / risk / pending
+   secondary= info / governance / secondary actions
+   ========================================================= */
+:root {
+  /* Surfaces */
+  --surface: #0f131c;
+  --surface-dim: #0f131c;
+  --surface-bright: #353942;
+  --surface-container-lowest: #0a0e16;
+  --surface-container-low: #181c24;
+  --surface-container: #1c2028;
+  --surface-container-high: #262a33;
+  --surface-container-highest: #31353e;
+  --surface-variant: #31353e;
+  --background: #0f131c;
+  --on-background: #dfe2ee;
+  --on-surface: #dfe2ee;
+  --on-surface-variant: #bbcabf;
+  --inverse-surface: #dfe2ee;
+  --inverse-on-surface: #2c3039;
+  --outline: #86948a;
+  --outline-variant: #3c4a42;
+
+  /* Primary — emerald */
+  --primary: #4edea3;
+  --on-primary: #003824;
+  --primary-container: #10b981;
+  --on-primary-container: #00422b;
+  --primary-fixed: #6ffbbe;
+  --inverse-primary: #006c49;
+
+  /* Secondary — indigo/blue */
+  --secondary: #adc6ff;
+  --on-secondary: #002e6a;
+  --secondary-container: #0566d9;
+  --on-secondary-container: #e6ecff;
+
+  /* Tertiary — amber */
+  --tertiary: #ffb95f;
+  --on-tertiary: #472a00;
+  --tertiary-container: #e29100;
+
+  /* Error — losses */
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+
+  /* Semantic aliases */
+  --gain: var(--primary);
+  --loss: var(--error);
+  --warn: var(--tertiary);
+  --info: var(--secondary);
+
+  /* Borders (component notes) */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-input: rgba(255, 255, 255, 0.12);
+  --divider: rgba(255, 255, 255, 0.05);
+  --hover-ghost: rgba(255, 255, 255, 0.05);
+  --overlay-ring: 0 0 0 1px rgba(59, 130, 246, 0.25);
+  --overlay-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+
+  /* Typography */
+  --font-display: 'Hanken Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Radius */
+  --radius-sm: 0.125rem;
+  --radius: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --gutter: 1.5rem;
+  --margin: 2rem;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur: 250ms;
+}
+
+@media (max-width: 1279px) {
+  :root { --gutter: 1rem; --margin: 1.5rem; }
+}
+@media (max-width: 767px) {
+  :root { --gutter: 0.75rem; --margin: 1rem; }
+}
