@@ -15,3 +15,7 @@ export const fmtBig = (n) => {
 };
 
 export const tone = (n) => (n > 0 ? 'gain' : n < 0 ? 'loss' : 'muted');
+
+// Null-safe fixed formatting: fx(12.345, 1, 'x') -> "12.3x", fx(null) -> "—"
+export const fx = (n, digits = 2, suffix = '') =>
+  n == null || Number.isNaN(Number(n)) ? '—' : `${Number(n).toFixed(digits)}${suffix}`;

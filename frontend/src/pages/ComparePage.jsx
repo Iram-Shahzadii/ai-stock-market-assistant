@@ -1,9 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Badge, Card, DataTable, Provenance, Segmented } from '../components/ui';
+import { Badge, Card, DataTable, Provenance, Segmented, Skeleton } from '../components/ui';
 import LineSvg from '../components/LineSvg';
-import { FUNDAMENTALS, TICKERS, getCandles, MOCK_SOURCES } from '../data/mock';
+import { TICKERS } from '../data/mock';
+import { fetchFundamentals, fetchHistory } from '../api/client';
+import { useApi } from '../lib/useApi';
 import { rsi } from '../lib/indicators';
-import { fmtBig, fmtPct, tone } from '../lib/format';
+import { fmtBig, fmtPct, fx, tone } from '../lib/format';
+
+async function loadAll(symbols) {
+  const out = await Promise.all(symbols.map(async (s) => {
+    const [h, f] = await Promise.all([fetchHistory(s, '1y'), fetchFundamentals(s)]);
+    return [s, { candles: h.candles, f, demo: h.demo }];
+  }));
+  return Object.fromEntries(out);
+}
 
 const COLORS = { AAPL: '#adc6ff', MSFT: '#4edea3', NVDA: '#ffb95f', TSLA: '#ffb4ab' };
 const RANGES = { '3M': 63, '6M': 126, '1Y': 252 };
@@ -13,12 +23,13 @@ export default function ComparePage() {
   const [range, setRange] = useState('1Y');
   const n = RANGES[range];
 
+  const { data: loaded, loading } = useApi(() => loadAll(picked), [picked.join()]);
   const toggle = (s) => setPicked((p) => (p.includes(s) ? (p.length > 1 ? p.filter((x) => x !== s) : p) : [...p, s]));
 
   const data = useMemo(
     () =>
-      picked.map((s) => {
-        const c = getCandles(s).slice(-n);
+      !loaded ? [] : picked.filter((s) => loaded[s]).map((s) => {
+        const c = loaded[s].candles.slice(-n);
         const base = c[0].close;
         const closes = c.map((x) => x.close);
         const rets = closes.slice(1).map((v, i) => Math.log(v / closes[i]));
@@ -33,13 +44,16 @@ export default function ComparePage() {
           ret: (closes.at(-1) / base - 1) * 100,
           vol,
           mdd: mdd * 100,
-          rsi: rsi(getCandles(s).map((x) => x.close)).at(-1),
-          f: FUNDAMENTALS[s],
+          rsi: rsi(loaded[s].candles.map((x) => x.close)).at(-1),
+          f: loaded[s].f,
+          demo: loaded[s].demo,
         };
       }),
-    [picked, n],
+    [picked, n, loaded],
   );
   const best = [...data].sort((a, b) => b.ret - a.ret)[0];
+  const ready = !loading && data.length > 0;
+  const demo = data.some((d) => d.demo);
 
   return (
     <>
@@ -58,6 +72,9 @@ export default function ComparePage() {
         </div>
       </div>
 
+      {!ready ? (
+        <div className="grid"><div className="col-8"><Skeleton h={360} /></div><div className="col-4"><Skeleton h={360} /></div><div className="col-12"><Skeleton h={220} /></div></div>
+      ) : (
       <div className="grid">
         <Card
           className="col-8"
@@ -86,7 +103,7 @@ export default function ComparePage() {
             </div>
           ))}
           <Provenance
-            sources={MOCK_SOURCES.slice(0, 1)}
+            sources={demo ? [{ label: 'Demo data (backend offline)', url: 'https://finance.yahoo.com' }] : data.map((d) => ({ label: `Yahoo Finance — ${d.symbol}`, url: `https://finance.yahoo.com/quote/${d.symbol}` }))}
             assumptions={['Returns use close prices, no dividends', 'Volatility is annualised from daily log returns (252 days)', 'Max drawdown = largest peak-to-trough fall']}
           />
         </Card>
@@ -99,15 +116,16 @@ export default function ComparePage() {
               <span className={tone(d.ret)}>{fmtPct(d.ret)}</span>,
               `${d.vol.toFixed(1)}%`,
               <span className="loss">{d.mdd.toFixed(1)}%</span>,
-              d.rsi.toFixed(1),
-              fmtBig(d.f.marketCap),
-              `${d.f.pe.toFixed(1)}x`,
-              `${d.f.netMargin.toFixed(1)}%`,
-              d.f.debtToEquity.toFixed(2),
+              fx(d.rsi, 1),
+              fmtBig(d.f?.marketCap),
+              fx(d.f?.pe, 1, 'x'),
+              fx(d.f?.netMargin, 1, '%'),
+              fx(d.f?.debtToEquity, 2),
             ])}
           />
         </Card>
       </div>
+      )}
     </>
   );
 }
