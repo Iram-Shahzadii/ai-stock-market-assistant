@@ -2,9 +2,9 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Icon from './Icon';
 import { Badge } from './ui';
-import { TICKERS, getQuote } from '../data/mock';
 import { fmtPrice, fmtPct, tone } from '../lib/format';
-import { USE_MOCK } from '../api/client';
+import { fetchQuotes, getHealth } from '../api/client';
+import { useApi } from '../lib/useApi';
 
 const NAV = [
   { to: '/', label: 'Assistant', icon: 'chat' },
@@ -16,7 +16,8 @@ const NAV = [
 ];
 
 function TickerTape() {
-  const items = TICKERS.map((t) => getQuote(t.symbol));
+  const { data } = useApi(() => fetchQuotes(), []);
+  const items = data?.list ?? [];
   const row = [...items, ...items, ...items, ...items];
   return (
     <div className="ticker-tape">
@@ -35,6 +36,8 @@ function TickerTape() {
 
 export default function Layout({ children }) {
   const location = useLocation();
+  const { data: health } = useApi(() => getHealth(), []);
+  const live = health && !health.demo;
   return (
     <div className="app">
       <aside className="sidebar">
@@ -59,7 +62,12 @@ export default function Layout({ children }) {
           </NavLink>
         ))}
         <div className="sidebar-foot stack" style={{ gap: 8 }}>
-          <Badge tone={USE_MOCK ? 'warn' : 'gain'} dot pulse>{USE_MOCK ? 'DEMO DATA' : 'LIVE'}</Badge>
+          <Badge tone={live ? 'gain' : 'warn'} dot pulse>{live ? 'BACKEND LIVE' : 'DEMO DATA'}</Badge>
+          {live && (
+            <span className="label-sm muted">
+              AI: {health.ai === 'gemini' ? health.model : 'auto summary'} · MCP: {health.mcp ? 'on' : 'local'}
+            </span>
+          )}
           <span className="body-sm muted">Educational analysis only. Not financial advice.</span>
         </div>
       </aside>

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CandleChart, IndicatorChart } from '../components/CandleChart';
 import { AnimatedNumber, Badge, Card, Provenance, Segmented, Skeleton, TickerSelect } from '../components/ui';
-import { TICKERS, getCandles, getQuote, MOCK_SOURCES } from '../data/mock';
+import { TICKERS } from '../data/mock';
+import { fetchHistory } from '../api/client';
+import { useApi } from '../lib/useApi';
 import { macd, rsi, sma, trendOf } from '../lib/indicators';
 import { fmtBig, fmtPct, fmtPrice, tone } from '../lib/format';
 
@@ -10,18 +12,39 @@ const RANGES = { '3M': 63, '6M': 126, '1Y': 252 };
 export default function ChartPage() {
   const [symbol, setSymbol] = useState('NVDA');
   const [range, setRange] = useState('6M');
+  const { data, loading } = useApi(() => fetchHistory(symbol, '2y'), [symbol]);
+  const ready = !loading && data?.candles?.length > 30;
+
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <div className="label-sm muted">Technical analysis</div>
+          <h1 className="h-lg">Price &amp; Indicators</h1>
+        </div>
+        <div className="row wrap">
+          {data && !loading && <Badge tone={data.demo ? 'warn' : 'gain'} dot>{data.demo ? 'DEMO DATA' : 'LIVE · YAHOO'}</Badge>}
+          <TickerSelect value={symbol} onChange={setSymbol} tickers={TICKERS} />
+          <Segmented options={Object.keys(RANGES)} value={range} onChange={setRange} />
+        </div>
+      </div>
+      {ready ? (
+        <ChartBody key={symbol} all={data.candles} sources={data.sources} range={range} />
+      ) : (
+        <div className="grid">
+          {[0, 1, 2, 3].map((k) => <div key={k} className="col-3"><Skeleton h={110} /></div>)}
+          <div className="col-9"><Skeleton h={480} /></div>
+          <div className="col-3"><Skeleton h={480} /></div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ChartBody({ all, sources, range }) {
   const [ma, setMa] = useState({ sma20: true, sma50: true, sma200: false });
-  const [loading, setLoading] = useState(true);
   const [hover, setHover] = useState(null);
-
-  // Simulated load so skeleton + chart entrance animation are visible
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(t);
-  }, [symbol, range]);
-
-  const all = useMemo(() => getCandles(symbol), [symbol]);
+  const loading = false;
   const calc = useMemo(() => {
     const closes = all.map((c) => c.close);
     return {
@@ -54,7 +77,9 @@ export default function ChartPage() {
   );
   const macdHist = useMemo(() => calc.macd.hist.slice(-n), [calc, n]);
 
-  const q = getQuote(symbol);
+  const last = all.at(-1);
+  const prevC = all.at(-2);
+  const q = { price: last.close, changePct: ((last.close - prevC.close) / prevC.close) * 100 };
   const lastRsi = calc.rsi.at(-1);
   const periodChange = ((view.at(-1).close - view[0].close) / view[0].close) * 100;
   const avgVol = view.reduce((a, c) => a + c.volume, 0) / view.length;
@@ -63,17 +88,6 @@ export default function ChartPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <div className="label-sm muted">Technical analysis</div>
-          <h1 className="h-lg">Price &amp; Indicators</h1>
-        </div>
-        <div className="row wrap">
-          <TickerSelect value={symbol} onChange={setSymbol} tickers={TICKERS} />
-          <Segmented options={Object.keys(RANGES)} value={range} onChange={setRange} />
-        </div>
-      </div>
-
       <div className="grid" style={{ marginBottom: 'var(--gutter)' }}>
         <Card className="col-3" compact lift i={0}>
           <div className="body-sm muted">Last price</div>
@@ -141,7 +155,7 @@ export default function ChartPage() {
               {calc.macd.hist.at(-1) >= 0 ? 'positive' : 'weakening'} momentum.
             </p>
             <Provenance
-              sources={MOCK_SOURCES.slice(0, 1)}
+              sources={sources}
               assumptions={['Daily candles', 'RSI uses Wilder smoothing (14)', 'MACD 12/26/9 EMA']}
             />
           </Card>

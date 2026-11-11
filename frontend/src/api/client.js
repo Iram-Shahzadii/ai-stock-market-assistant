@@ -1,65 +1,93 @@
-// API client. Hissa A: mock responses. Hissa B: real calls to the FastAPI backend.
-import { getQuote, getCandles, FUNDAMENTALS, MOCK_SOURCES } from '../data/mock';
+// API client for the FastAPI backend.
+// If the backend is not running (or Yahoo is unavailable) every call falls back to demo data,
+// and the result carries `demo: true` so the UI can show a "DEMO DATA" badge.
+import { getCandles, getQuote, FUNDAMENTALS, MOCK_SOURCES, TICKERS } from '../data/mock';
 import { rsi, sma, trendOf } from '../lib/indicators';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-export const USE_MOCK = true; // Hissa B mein false hoga
+export const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const FORCE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-
-function detectTicker(text) {
-  const t = text.toUpperCase();
-  for (const s of ['AAPL', 'MSFT', 'NVDA', 'TSLA']) if (t.includes(s)) return s;
-  if (/APPLE/.test(t)) return 'AAPL';
-  if (/MICROSOFT/.test(t)) return 'MSFT';
-  if (/NVIDIA/.test(t)) return 'NVDA';
-  if (/TESLA/.test(t)) return 'TSLA';
-  return 'AAPL';
+async function http(path, options = {}) {
+  if (FORCE_MOCK) throw new Error('mock mode');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), options.timeout ?? 20000);
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-// Returns a structured answer: text + optional table + tool steps + sources + assumptions
-export async function sendChat(message, onStep) {
-  const ticker = detectTicker(message);
-  const steps = [
-    `get_quote(${ticker})`,
-    `get_price_history(${ticker}, 1y)`,
-    `run_python(indicators.py)`,
-  ];
-  for (const s of steps) {
-    await wait(450);
-    onStep?.(s);
+async function withFallback(real, demo) {
+  try {
+    return { ...(await real()), demo: false };
+  } catch (e) {
+    return { ...demo(), demo: true, error: e.message };
   }
-  await wait(400);
+}
 
-  const q = getQuote(ticker);
-  const closes = getCandles(ticker).map((c) => c.close);
+export const getHealth = () =>
+  withFallback(() => http('/api/health', { timeout: 4000 }), () => ({ status: 'offline', ai: 'demo', mcp: false }));
+
+export const fetchHistory = (symbol, period = '2y') =>
+  withFallback(
+    () => http(`/api/history/${symbol}?period=${period}`),
+    () => ({ symbol, candles: getCandles(symbol), sources: MOCK_SOURCES.slice(0, 1) }),
+  );
+
+export const fetchFundamentals = (symbol) =>
+  withFallback(() => http(`/api/fundamentals/${symbol}`), () => ({ symbol, ...FUNDAMENTALS[symbol] ?? FUNDAMENTALS.AAPL, sources: MOCK_SOURCES }));
+
+export async function fetchQuotes(symbols = TICKERS.map((t) => t.symbol)) {
+  try {
+    const list = await http(`/api/quotes?tickers=${symbols.join(',')}`, { timeout: 45000 });
+    return { list, demo: false };
+  } catch {
+    return { list: symbols.map(getQuote), demo: true };
+  }
+}
+
+// ---- demo chat (used when the backend is offline) ----
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function demoChat(message) {
+  const t = ['AAPL', 'MSFT', 'NVDA', 'TSLA'].find((s) => message.toUpperCase().includes(s)) || 'AAPL';
+  await wait(900);
+  const c = getCandles(t);
+  const closes = c.map((x) => x.close);
   const r = rsi(closes).at(-1);
   const s50 = sma(closes, 50).at(-1);
   const s200 = sma(closes, 200).at(-1);
-  const tr = trendOf(closes);
-  const f = FUNDAMENTALS[ticker];
-
+  const f = FUNDAMENTALS[t];
   return {
-    ticker,
+    ticker: t,
     text: [
-      `${ticker} is trading at ${q.price.toFixed(2)} (${q.changePct >= 0 ? '+' : ''}${q.changePct.toFixed(2)}% today). The trend is **${tr.label.toLowerCase()}**: price vs the 50-day average is ${q.price > s50 ? 'above' : 'below'}, and the 50-day is ${s50 > s200 ? 'above' : 'below'} the 200-day.`,
-      `RSI(14) is ${r.toFixed(1)}, which is ${r > 70 ? 'overbought territory (possible pullback risk)' : r < 30 ? 'oversold territory (possible bounce)' : 'in the neutral zone'}. On valuation, P/E is ${f.pe.toFixed(1)}x with a ${f.netMargin.toFixed(1)}% net margin.`,
+      `**${t}** is at **${closes.at(-1).toFixed(2)}**. Trend: **${trendOf(closes).label.toLowerCase()}**. RSI(14) is ${r.toFixed(1)}; P/E is ${f.pe}x.`,
+      '_Backend is offline, so this answer uses demo data. Start the backend for live data and AI answers._',
     ],
-    table: {
-      columns: ['Metric', 'Value'],
-      rows: [
-        ['Price', q.price.toFixed(2)],
-        ['RSI (14)', r.toFixed(1)],
-        ['SMA 50', s50.toFixed(2)],
-        ['SMA 200', s200.toFixed(2)],
-        ['P/E (TTM)', `${f.pe.toFixed(1)}x`],
-      ],
-    },
+    table: { columns: ['Metric', 'Value'], rows: [['RSI 14', r.toFixed(1)], ['SMA 50', s50.toFixed(2)], ['SMA 200', s200.toFixed(2)], ['P/E', f.pe]] },
+    chart: { type: 'price', symbol: t, points: c.slice(-120).map((x) => ({ time: x.time, close: x.close })) },
     sources: MOCK_SOURCES,
-    assumptions: [
-      'Demo mode: mock data, not live prices.',
-      'Indicators use daily closes over the last ~300 trading days.',
-      'This is educational analysis, not financial advice.',
-    ],
+    assumptions: ['Demo data, not live prices.', 'Educational analysis only, not financial advice.'],
+    tools: [{ name: 'demo_data', ok: true, transport: 'local', ms: 0 }],
+    mode: 'demo',
   };
+}
+
+// history: [{ role: 'user'|'ai', content, ticker }]
+export async function sendChat(message, history = []) {
+  try {
+    const res = await http('/api/chat', { method: 'POST', body: JSON.stringify({ message, history }), timeout: 90000 });
+    return { ...res, demo: false };
+  } catch (e) {
+    return { ...(await demoChat(message)), demo: true, error: e.message };
+  }
 }

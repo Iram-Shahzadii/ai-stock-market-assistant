@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AnimatedNumber, Badge, Card, DataTable, Provenance, TickerSelect } from '../components/ui';
 import LineSvg from '../components/LineSvg';
-import { TICKERS, getQuote, getCandles } from '../data/mock';
+import { TICKERS } from '../data/mock';
+import { fetchHistory } from '../api/client';
+import { useApi } from '../lib/useApi';
 import { fmtPct, fmtPrice, tone } from '../lib/format';
 
 // Lognormal (GBM) projection with an analytic 10th–90th percentile band.
@@ -24,8 +26,9 @@ function project({ amount, years, mu, sigma }) {
   return { mid, upper, lower };
 }
 
-function histVol(symbol) {
-  const c = getCandles(symbol).map((x) => x.close);
+function histVol(candles) {
+  if (!candles || candles.length < 3) return 0.3;
+  const c = candles.slice(-252).map((x) => x.close);
   const r = c.slice(1).map((v, i) => Math.log(v / c[i]));
   const m = r.reduce((a, b) => a + b, 0) / r.length;
   return Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / r.length) * Math.sqrt(252);
@@ -49,8 +52,9 @@ export default function WhatIfPage() {
   const [years, setYears] = useState(3);
   const [mu, setMu] = useState(0.1);
   const [shock, setShock] = useState(-20);
-  const sigma = useMemo(() => histVol(symbol), [symbol]);
-  const q = getQuote(symbol);
+  const { data: hist } = useApi(() => fetchHistory(symbol, '1y'), [symbol]);
+  const sigma = useMemo(() => histVol(hist?.candles), [hist]);
+  const q = { price: hist?.candles?.at(-1)?.close ?? 100 };
   const p = useMemo(() => project({ amount, years, mu, sigma }), [amount, years, mu, sigma]);
 
   const shares = amount / q.price;
@@ -129,7 +133,7 @@ export default function WhatIfPage() {
         </Card>
         <Card className="col-6" i={3} title="Assumptions & method">
           <Provenance
-            sources={[{ label: 'Price history: Yahoo Finance via yfinance (demo data in Hissa A)', url: 'https://finance.yahoo.com' }]}
+            sources={[{ label: `Price history: ${hist?.demo ? 'demo data (backend offline)' : 'Yahoo Finance via yfinance'}`, url: `https://finance.yahoo.com/quote/${symbol}` }]}
             assumptions={[
               'Prices follow geometric Brownian motion (log-normal returns).',
               `Volatility = ${(sigma * 100).toFixed(1)}% from 1 year of daily returns.`,

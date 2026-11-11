@@ -42,19 +42,27 @@ ai-stock-market-assistant/
 
 ## Setup (Windows)
 
+1. Copy `.env.example` to `.env` (project root) and add your free Gemini key.
+2. Start the backend (terminal 1):
+
 ```bash
-# 1. Frontend
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn app.main:app --port 8000
+```
+
+3. Start the frontend (terminal 2):
+
+```bash
 cd frontend
 npm install
 npm run dev
-# open http://localhost:5173
 ```
 
-Backend setup instructions will be added in Hissa B.
-
-### Environment variables
-
-Copy `.env.example` to `.env` in the project root and fill in your values. `.env` is ignored by git, so keys never reach GitHub.
+Open http://localhost:5173 (app) and http://localhost:8000/docs (API).
+If the backend is offline the UI automatically shows demo data with a **DEMO DATA** badge.
 
 ## Screenshots
 
