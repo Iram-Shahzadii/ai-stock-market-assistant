@@ -1,3 +1,13 @@
+---
+title: AI Stock Market Assistant
+emoji: 📈
+colorFrom: green
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # AI Stock Market Assistant
 
 An AI stock market assistant that brings together market data, company research and analysis in one conversational interface.
@@ -91,6 +101,16 @@ docker run -d -p 6379:6379 redis:7-alpine          # Redis only
 cd backend && .venv\Scripts\activate
 celery -A app.worker worker --pool=solo --loglevel=info
 ```
+
+## Deployment (free)
+
+| Part | Host | Notes |
+|---|---|---|
+| **Frontend + backend together** | **Hugging Face Spaces (Docker, free CPU basic)** | Root `Dockerfile` builds React and serves it from FastAPI on port 7860: one URL for everything. Add `GEMINI_API_KEY` as a Space secret. |
+| Frontend | Vercel (Hobby, free) | Root directory `frontend`, env `VITE_API_URL` = Render URL. `vercel.json` handles page refresh on routes. |
+| Backend | Render (free web service) | Blueprint `render.yaml`. Free service sleeps after 15 min idle (first request 30-60 s). |
+| Jobs + sandbox | Same Render service | Free plan has no worker/Redis, so `JOBS_MODE=local` and the sandbox runs as an isolated subprocess. |
+| Full Celery + Redis + Docker sandbox | Local `docker compose up` (or a paid worker) | Shown in the live demo. |
 
 ## Tests and checks
 

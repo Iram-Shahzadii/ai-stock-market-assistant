@@ -7,9 +7,12 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.config import settings
@@ -155,3 +158,21 @@ def retry_job(job_id: str):
         raise HTTPException(404, "Job not found") from e
     except ValueError as e:
         raise HTTPException(409, str(e)) from e
+
+
+# ---------------- Serve the built React app (single-container deploy) ----------------
+# When frontend/dist exists (Docker / Hugging Face Spaces), the same server hosts the UI,
+# so frontend and backend share one URL. Must stay at the end, after all /api routes.
+DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if DIST.is_dir():
+    if (DIST / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        target = (DIST / full_path).resolve()
+        if full_path and target.is_file() and DIST.resolve() in target.parents:
+            return FileResponse(target)
+        return FileResponse(DIST / "index.html")  # React router handles the page
